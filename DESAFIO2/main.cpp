@@ -8,9 +8,10 @@ private:
     string nombre;
     int tiempoSiguiente;
     Estacion* siguiente;
+    bool esTransferencia;
 
 public:
-    Estacion(string nombre, int tiempoSiguiente) : nombre(nombre), tiempoSiguiente(tiempoSiguiente), siguiente(nullptr) {}
+    Estacion(string nombre, int tiempoSiguiente) : nombre(nombre), tiempoSiguiente(tiempoSiguiente), siguiente(nullptr), esTransferencia(false) {}
 
     string obtenerNombre() const {
         return nombre;
@@ -28,10 +29,19 @@ public:
         siguiente = siguienteEstacion;
     }
 
+    bool obtenerEsTransferencia() const {
+        return esTransferencia;
+    }
+
+    void establecerEsTransferencia(bool valor) {
+        esTransferencia = valor;
+    }
+
     ~Estacion() {
         delete siguiente;
     }
 };
+
 
 class Linea {
 private:
@@ -61,11 +71,27 @@ public:
         }
     }
 
+    Estacion* obtenerEstacion(const string& nombreEstacion) {
+        Estacion* estacionActual = primeraEstacion;
+        while (estacionActual) {
+            if (estacionActual->obtenerNombre() == nombreEstacion) {
+                return estacionActual;
+            }
+            estacionActual = estacionActual->obtenerSiguiente();
+        }
+        return nullptr;
+    }
+
     void eliminarEstacion(const string& nombreEstacion) {
         Estacion* anterior = nullptr;
         Estacion* actual = primeraEstacion;
         while (actual) {
             if (actual->obtenerNombre() == nombreEstacion) {
+                if (actual->obtenerEsTransferencia()) {
+                    cout << "No se puede eliminar una estación de transferencia." << endl;
+                    return;
+                }
+
                 if (anterior) {
                     anterior->establecerSiguiente(actual->obtenerSiguiente());
                 } else {
@@ -94,9 +120,6 @@ public:
             estacionActual = estacionActual->obtenerSiguiente();
         }
     }
-
-
-
 };
 
 class RedMetro {
@@ -191,15 +214,13 @@ public:
 
         // Agregar la estación de transferencia a la línea de origen y a la línea de transferencia
         lineaOrigen->agregarEstacion(nombreEstacion, tiempoSiguiente);
+        lineaOrigen->obtenerEstacion(nombreEstacion)->establecerEsTransferencia(true); // Marcar como estación de transferencia
         lineaTransferencia->agregarEstacion(nombreEstacionTransferencia, tiempoSiguiente);
+        lineaTransferencia->obtenerEstacion(nombreEstacionTransferencia)->establecerEsTransferencia(true); // Marcar como estación de transferencia
 
         // Actualizar la cantidad de líneas en la red del metro
         cantidadLineas++;
     }
-
-
-
-
 
     void mostrarEstacionesDeLinea(const string& nombreLinea) const {
         for (int i = 0; i < cantidadLineas; ++i) {
@@ -211,22 +232,17 @@ public:
         cout << "No se encontró la línea con el nombre especificado." << endl;
     }
 
-    void eliminarEstacionesDeLinea(const string& nombreLinea) {
+    void eliminarEstacionesDeLinea(const string& nombreLinea, const string& nombreEstacion) {
         for (int i = 0; i < cantidadLineas; ++i) {
             if (lineas[i]->obtenerNombre() == nombreLinea) {
-                delete lineas[i];
-                cantidadLineas--;
-                for (int j = i; j < cantidadLineas; ++j) {
-                    lineas[j] = lineas[j + 1];
-                }
+                // Buscar la estación en la línea y eliminarla
+                lineas[i]->eliminarEstacion(nombreEstacion);
                 return;
             }
         }
         cout << "No se encontró la línea con el nombre especificado." << endl;
     }
 };
-
-
 
 int main() {
     string nombreLinea;
@@ -269,7 +285,7 @@ int main() {
             cin >> nombreLinea;
             cout << "Ingrese el nombre de la estación que desea eliminar: ";
             cin >> nombreEstacion;
-            red.eliminarEstacionesDeLinea(nombreLinea);
+            red.eliminarEstacionesDeLinea(nombreLinea, nombreEstacion);
             break;
         }
         case 4: {
@@ -307,3 +323,4 @@ int main() {
 
     return 0;
 }
+
